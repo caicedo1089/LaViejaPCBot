@@ -1,0 +1,18 @@
+{
+  "name": "avilafcbot",
+  "version": "1.0.0",
+  "description": "Es un Bot Telegram para adminitrar los juegos del equipo de fútbol Ávila F.C.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Pedro Caicedo",
+  "license": "MIT",
+  "dependencies": {
+    "node-telegram-bot-api": "^0.28.0"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.1"
+  }
+}

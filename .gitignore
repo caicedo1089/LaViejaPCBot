@@ -1,0 +1,4 @@
+.vscode
+node_modules
+src/index.js
+dist/index.js
