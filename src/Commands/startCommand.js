@@ -36,25 +36,31 @@ class StartCommand extends Command {
         let $this = this
         let misArguments = [chatId]
 
+        //En caso que se inicie el chat
         if(!App.session[chatId])
         {
+            let username = msg.chat.username || `${msg.chat.first_name}_${msg.chat.last_name}`
+
             App.session[chatId] = {
                 command: this.name,
                 funtionExcecute: 'displayMenu',
                 strBoard: this.global.board.default,
-                turn: 'user1',
-                attempts: this.global.board.attempts
+                turn: Math.floor((Math.random() * 2) + 1) == 1? 'user1' : 'user2',
+                attempts: this.global.board.attempts,
+                user1: username,
+                user2: username
             }
 
-            misArguments.push(
-                App.lang('Hola ') + msg.from.first_name + '\n'
-            )
+            misArguments.push(`${App.lang('Hola')} <b>${msg.from.first_name}</b>\n\n`)
         }
-    
+        
+        //Se ejecuta la función de acuerdo al último estado
         misArguments = this[App.session[chatId].funtionExcecute].apply(this, [msg].concat(misArguments))
 
+        //Se arma la respuesta
         misArguments = [chatId].concat(misArguments)
-
+        
+        //Se envía el mensaje
         $this.bot.sendMessage.apply($this.bot, misArguments)
     }
 
@@ -65,10 +71,11 @@ class StartCommand extends Command {
         
         strResult += App.lang('Por favor seleccione una opción:')
 
+        objResultParseMode['parse_mode'] = 'HTML'
         objResultParseMode['reply_markup'] = {
             "keyboard": [
                 ["Jugar"],   
-                ["Acerca de"]
+                //["Acerca de"]
             ]
         }
 
@@ -95,16 +102,33 @@ class StartCommand extends Command {
                 let strBoard = App.session[chatId].strBoard
                 let playValue = this.global.board.chars[App.session[chatId].turn]
 
-                App.session[chatId].strBoard = strBoard.substr(0, index) + playValue + strBoard.substr(index + playValue.length);
-                
-                App.session[chatId].turn  = App.session[chatId].turn  == 'user1'? 'user2' : 'user1'
-                
-                App.session[chatId].attempts--
+                //En el caso que envíe varias veces la misma opción
+                if( App.session[chatId].strBoard[index] == this.global.board.chars.user1 || 
+                    App.session[chatId].strBoard[index] == this.global.board.chars.user2 )
+                {
+                    strResult += App.lang('Esa opción ya fué seleccionada\n\n')
+                }
+                else
+                {
+                    App.session[chatId].strBoard = strBoard.substr(0, index) + playValue + strBoard.substr(index + playValue.length);
+                    
+                    App.session[chatId].turn  = App.session[chatId].turn  == 'user1'? 'user2' : 'user1'
+                    
+                    App.session[chatId].attempts--
+                }
             }
         }
-
-        strResult += App.lang('Mostrar tablero:')
-        strResult += this.viewBoard(App.session[chatId].strBoard)
+        else
+        {
+            //Se debe sortiar el turno 
+        }
+        
+        strResult += `<b>${'Tú'} (${this.global.board.chars.user1}) vs ${App.session[chatId].user2} (${this.global.board.chars.user2})</b>\n\n` 
+        strResult += `<i>${App.session[chatId][App.session[chatId].turn]}</i> es su turno.\n\n`
+        strResult += `<pre>${this.viewBoard(App.session[chatId].strBoard, 6)}</pre>`
+       
+       
+        objResultParseMode['parse_mode'] = 'HTML'
         
         objResultParseMode['reply_markup'] = {
             "keyboard": this.viewOptions(App.session[chatId].strBoard)
@@ -115,38 +139,68 @@ class StartCommand extends Command {
 
         if(App.session[chatId].attempts < 1)
         {
-            strResult += App.lang('\n\nJuego Terminado')
-            App.session[chatId].funtionExcecute = 'displayMenu'
+            strResult += App.lang('\n\nJuego Terminado!!!\n')
+            //App.session[chatId].funtionExcecute = 'displayMenu'
 
             //Reset de los valores
             App.session[chatId].strBoard = this.global.board.default,
             App.session[chatId].turn = 'user1',
             App.session[chatId].attempts = this.global.board.attempts
+
+            objResultParseMode['reply_markup'] = {
+                "keyboard": [
+                    ["Jugar"],   
+                    //["Acerca de"]
+                ]
+            }
         }
 
         return [strResult, objResultParseMode]
     }
 
-    viewBoard(strBoard)
+    viewBoard(strBoard, maxLength, intRows, intColumms)
     {
-        let arrResult = []
+        intRows = intRows || this.global.board.rows
+        intColumms = intColumms || this.global.board.columns
+        maxLength = maxLength || 28
 
-        for(let i=0; i<this.global.board.rows; ++i)
+        let arrResult = []
+        let intCenter = 0
+        
+        for(let i=0; i<intRows; ++i)
         {
             let row = []
-            
-            for(let j=0; j<this.global.board.columns; ++j)
+            for(let j=0; j<intColumms; ++j)
             {
-                row.push(strBoard[i*this.global.board.rows+j])
+                row.push(strBoard[i*intRows+j])
             }
-
+            
+            
+            row = row.join('|')
+            
+            //Centramos
+            intCenter = (maxLength - row.length)/2 - 1
+            for(let k=0; k<intCenter; ++k)
+            {
+                row = ' ' + row
+            }
+            
             arrResult.push(
-                row.join('|') + '\n'
+                row + '\n'
             )
         }
-        return ('\n' + arrResult.join('___\n'))
+        
+        //Se parador
+        let separador = '-----\n' //Este separador debe ser dinámico
+        for(let k=0; k<intCenter; ++k)
+        {
+            separador = ' ' + separador
+        }
+        
+        return (arrResult.join(separador))
     }
 
+    
     viewOptions(strBoard)
     {
         let arrResult = []

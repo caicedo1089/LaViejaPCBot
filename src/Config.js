@@ -3,7 +3,10 @@ let config = {
         name: 'LaViejaPCBot',
         commands: [
             //Comandos globales
-            'start'
+            'start',
+
+            //Comandos propios
+            'config'
         ]
     },
 };

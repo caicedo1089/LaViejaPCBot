@@ -20,6 +20,9 @@ class AppPC {
 
         //Manejo de sessiones
         this.session = {}
+
+        //Modo mantenimiento
+        this.maintenance = false
     }
 
     //Agregamos las configuraciones
@@ -83,6 +86,9 @@ class AppPC {
             function(msg)
             {
                 const chatId = msg.chat.id
+
+                
+
                 //console.log('msg:', msg)
                 //Si lo reconoce el api, es decir tiene entities
                 if(msg.entities)
@@ -96,7 +102,14 @@ class AppPC {
 
                         if(objAllCmds[command])
                         {
-                            /*botstrResp = */ objAllCmds[command].excecute(chatId, msg)    
+                            if(!App.maintenance || command=='config')
+                            {
+                                /*botstrResp = */ objAllCmds[command].excecute(chatId, msg)    
+                            }
+                            else
+                            {
+                                bot.sendMessage(chatId, App.lang('Estamos en mantenimiento.\nVolveremos pronto...'))
+                            }
                         }
                         else
                         {
@@ -110,7 +123,14 @@ class AppPC {
                 }
                 else
                 {
-                    let command = App.session[chatId].command
+                    //En caso que estemos en modo mantenimiento que hacemos
+                    if(App.maintenance)
+                    {
+                        bot.sendMessage(chatId, App.lang('Estamos en mantenimiento.\nVolveremos pronto...'))
+                        return
+                    }
+
+                    let command = App.session[chatId].command || 'start'
                     
                     objAllCmds[command].excecute(chatId, msg)
 
